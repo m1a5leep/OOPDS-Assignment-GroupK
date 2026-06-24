@@ -4,6 +4,9 @@ using namespace std;
 
 // ==========================================
 // FONG WEI HONG 253UC25627 - Member 1
+// ZAVIER LAY JIUN HAO - Member 2
+// JOY YU WEN 2521UC243S6 - Member 3
+// NUR DAMIA ADLINA BINTI KAMARULAZIZI 242UC244TE - Member 4
 // ==========================================
 
 class Register {
