@@ -1,6 +1,9 @@
 #include <iostream>
 #include <fstream>
 #include <cstdio>
+#include <cctype>
+#include <cstdlib>
+#include <string>
 
 using namespace std;
 
@@ -20,7 +23,7 @@ public:
         value = 0;
     }
 
-    virtual ~Register() {} 
+    virtual ~Register() {}
 
     virtual void setValue(signed char val) {
         value = val;
@@ -39,11 +42,11 @@ public:
     // Explicitly overriding the base class methods to match your specific design
     void setValue(signed char val) override {
         // Must call the parent method because 'value' is private in Register
-        Register::setValue(val); 
+        Register::setValue(val);
     }
 
     signed char getValue() const override {
-        return Register::getValue(); 
+        return Register::getValue();
     }
 };
 
@@ -82,7 +85,7 @@ public:
     // Helper to evaluate a math result and set flags accordingly
     void updateFlagsFromMath(int rawResult) {
         resetAllFlags();
-        
+
         if (rawResult == 0) {
             setZF(true);
         }
@@ -100,7 +103,7 @@ public:
 };
 
 // Forward declarations for classes built by other members
-class Memory; 
+class Memory;
 class Instruction;
 
 // ==========================================
@@ -158,6 +161,7 @@ public:
     }
 };
 
+// Zavier Lay Jiun Hao 253UC254FR - Member 2
 class StackDS {
 private:
     static const int MAX = 64;  // max 64 entries (matches UML field data[64])
@@ -175,7 +179,7 @@ public:
     // push(): put a value on top of the stack, crash if full
     void push(signed char val) {
         if (top >= MAX - 1) {
-            cerr << "[CRASH] Stack overflow — stack is full.\n";
+            cerr << "[CRASH] Stack overflow - stack is full.\n";
             exit(1);
         }
         top++;
@@ -185,7 +189,7 @@ public:
     // pop(): remove and return top value
     signed char pop() {
         if (isEmpty()) {
-            cerr << "[CRASH] Stack underflow — cannot pop from empty stack.\n";
+            cerr << "[CRASH] Stack underflow - cannot pop from empty stack.\n";
             exit(1);
         }
         signed char val = data[top];
@@ -197,7 +201,7 @@ public:
     // peek(): view top value without removing it
     signed char peek() const {
         if (isEmpty()) {
-            cerr << "[ERROR] Stack is empty — cannot peek.\n";
+            cerr << "[ERROR] Stack is empty - cannot peek.\n";
             exit(1);
         }
         return data[top];
@@ -316,7 +320,7 @@ public:
         if (tail != nullptr) {
             tail->next = n;
         } else {
-            head = n; // first item — head and tail both point here
+            head = n; // first item - head and tail both point here
         }
         tail = n;
         sz++;
@@ -325,7 +329,7 @@ public:
     // dequeue(): remove and return the front string
     string dequeue() {
         if (isEmpty()) {
-            cerr << "[ERROR] StringQueue is empty — cannot dequeue.\n";
+            cerr << "[ERROR] StringQueue is empty - cannot dequeue.\n";
             exit(1);
         }
         Node*  tmp = head;
@@ -342,7 +346,7 @@ public:
     // front(): view the front item without removing it
     string front() const {
         if (isEmpty()) {
-            cerr << "[ERROR] StringQueue is empty — cannot peek.\n";
+            cerr << "[ERROR] StringQueue is empty - cannot peek.\n";
             exit(1);
         }
         return head->val;
@@ -357,21 +361,21 @@ public:
 
 // ==========================================
 // Member 1
-// CPU class — extended to wire in Member 2's classes
+// CPU class - extended to wire in Member 2's classes
 // ==========================================
 class CPU {
 private:
     GeneralRegister registers[8]; // R0 to R7
     unsigned char PC;             // Program Counter (starts at 0)
     unsigned char SI;             // Stack Index (starts at 0)
-    
+
     // CPU aggregates FlagRegister (passed in via pointer)
-    FlagRegister* flags;          
-    
-    // CPU composes Memory (owns its lifecycle)  — Member 2 activated this
+    FlagRegister* flags;
+
+    // CPU composes Memory (owns its lifecycle) - Member 2 activated this
     Memory* memory;
 
-    // CPU composes StackDS (owns its lifecycle) — Member 2 added this
+    // CPU composes StackDS (owns its lifecycle) - Member 2 added this
     StackDS stack;
 
 public:
@@ -484,3 +488,352 @@ public:
     }
 };
 
+// trim(): remove leading/trailing whitespace from a string
+static string trim(const string& text) {
+    size_t start = 0;
+    size_t end = text.size();
+
+    while (start < end && isspace((unsigned char)text[start])) {
+        start++;
+    }
+
+    while (end > start && isspace((unsigned char)text[end - 1])) {
+        end--;
+    }
+
+    return text.substr(start, end - start);
+}
+
+// parseRegisterIndex(): parses tokens like "R0".."R7" into an index 0-7
+static bool parseRegisterIndex(const string& token, int& index) {
+    if (token.size() != 2) {
+        return false;
+    }
+
+    char letter = token[0];
+    char digit = token[1];
+
+    if ((letter != 'R' && letter != 'r') || digit < '0' || digit > '7') {
+        return false;
+    }
+
+    index = digit - '0';
+    return true;
+}
+
+// parseBracketedRegister(): parses "[R0]".."[R7]" used for register-indirect addressing
+static bool parseBracketedRegister(const string& token, int& index) {
+    if (token.size() < 3 || token.front() != '[' || token.back() != ']') {
+        return false;
+    }
+    string inner = trim(token.substr(1, token.size() - 2));
+    return parseRegisterIndex(inner, index);
+}
+
+// parseBracketedAddress(): parses "[20]" used for direct memory addressing
+static bool parseBracketedAddress(const string& token, int& address) {
+    if (token.size() < 3 || token.front() != '[' || token.back() != ']') {
+        return false;
+    }
+    string inner = trim(token.substr(1, token.size() - 2));
+    if (inner.empty()) return false;
+    for (char c : inner) {
+        if (!isdigit((unsigned char)c)) return false;
+    }
+    address = atoi(inner.c_str());
+    return true;
+}
+
+// parseImmediate(): parses signed decimal integers e.g. "10", "-5", "+3"
+static bool parseImmediate(const string& token, int& value) {
+    if (token.empty()) {
+        return false;
+    }
+
+    int sign = 1;
+    size_t i = 0;
+
+    if (token[0] == '+' || token[0] == '-') {
+        if (token[0] == '-') {
+            sign = -1;
+        }
+        i = 1;
+    }
+
+    if (i >= token.size()) {
+        return false;
+    }
+
+    int result = 0;
+    for (; i < token.size(); ++i) {
+        char c = token[i];
+        if (c < '0' || c > '9') {
+            return false;
+        }
+        result = result * 10 + (c - '0');
+    }
+
+    value = result * sign;
+    return true;
+}
+
+// splitOperands(): splits "dst, src" into its two trimmed operand strings
+static bool splitOperands(const string& text, string& left, string& right) {
+    size_t commaPos = text.find(',');
+    if (commaPos == string::npos) {
+        return false;
+    }
+
+    left = trim(text.substr(0, commaPos));
+    right = trim(text.substr(commaPos + 1));
+    return true;
+}
+
+// parseOpcodeAndOperands(): splits a line into opcode and operand string.
+// Returns false for empty/blank lines. Errors out if more than one
+// instruction is found on a single line, per spec section 3.
+static bool parseOpcodeAndOperands(const string& line, string& opcode, string& operands) {
+    string trimmed = trim(line);
+    if (trimmed.empty()) return false;
+
+    size_t sep = trimmed.find_first_of(" \t");
+    if (sep == string::npos) {
+        opcode = trimmed;
+        operands.clear();
+    } else {
+        opcode = trim(trimmed.substr(0, sep));
+        operands = trim(trimmed.substr(sep + 1));
+    }
+
+    for (char& c : opcode) c = (char)toupper((unsigned char)c);
+    return true;
+}
+
+// Supports the three modes required by spec 3.4:
+//   MOV R0, 10     -> immediate
+//   MOV R0, R1     -> register to register
+//   MOV R3, [R1]   -> register-indirect memory load
+static void Mov(CPU* cpu, const string& operands) {
+    string dstText, srcText;
+    if (!splitOperands(operands, dstText, srcText)) {
+        cerr << "Error: MOV requires two operands" << endl;
+        exit(1);
+    }
+
+    int dstIndex;
+    if (!parseRegisterIndex(dstText, dstIndex)) {
+        cerr << "Error: invalid destination register in MOV: " << dstText << endl;
+        exit(1);
+    }
+
+    int srcIndex, srcValue, srcAddr;
+    if (parseBracketedRegister(srcText, srcIndex)) {
+        // MOV R3, [R1] -> read memory at address held in R1
+        int addr = (int)(unsigned char)cpu->getRegister(srcIndex).getValue();
+        signed char val = cpu->memRead(addr);
+        cpu->setReg(dstIndex, (int)val);
+    } else if (parseBracketedAddress(srcText, srcAddr)) {
+        // MOV R3, [20] -> read memory at literal address 20
+        signed char val = cpu->memRead(srcAddr);
+        cpu->setReg(dstIndex, (int)val);
+    } else if (parseRegisterIndex(srcText, srcIndex)) {
+        cpu->setReg(dstIndex, (int)cpu->getRegister(srcIndex).getValue());
+    } else if (parseImmediate(srcText, srcValue)) {
+        cpu->setReg(dstIndex, srcValue);
+    } else {
+        cerr << "Error: invalid source operand in MOV: " << srcText << endl;
+        exit(1);
+    }
+}
+
+// Reads a value from the keyboard, validates the range and updates flags
+static void execInput(CPU* cpu, const string& operands) {
+    int regIndex;
+    if (!parseRegisterIndex(operands, regIndex)) {
+        cerr << "Error: INPUT requires a register operand" << endl;
+        exit(1);
+    }
+    int value;
+    cout << "?";
+    if (!(cin >> value)) {
+        cerr << "Error: failed to read input" << endl;
+        exit(1);
+    }
+    cpu->setReg(regIndex, value);
+}
+
+// Writes the value held in the register to the screen.
+static void execDisplay(CPU* cpu, const string& operands) {
+    int regIndex;
+    if (!parseRegisterIndex(operands, regIndex)) {
+        cerr << "Error: DISPLAY requires a register operand" << endl;
+        exit(1);
+    }
+    signed char value = cpu->getRegister(regIndex).getValue();
+    cout << "DISPLAY R" << regIndex << " = " << (int)value << endl;
+}
+
+// Bits are processed on the unsigned 8-bit representation of the register,
+// then the result is converted back into the signed char range and stored,
+// updating flags through CPU::setReg().
+static void execShiftRotate(CPU* cpu, const string& opcode, const string& operands) {
+    string regText, countText;
+    if (!splitOperands(operands, regText, countText)) {
+        cerr << "Error: " << opcode << " requires a register and count" << endl;
+        exit(1);
+    }
+    int regIndex;
+    if (!parseRegisterIndex(regText, regIndex)) {
+        cerr << "Error: invalid register for " << opcode << ": " << regText << endl;
+        exit(1);
+    }
+    int count;
+    if (!parseImmediate(countText, count)) {
+        cerr << "Error: invalid shift count for " << opcode << ": " << countText << endl;
+        exit(1);
+    }
+
+    unsigned char value = (unsigned char)cpu->getRegister(regIndex).getValue();
+    unsigned char result = value;
+    int shift = count & 7;
+    if (shift == 0) result = value;
+    else if (opcode == "SHL") result = (unsigned char)((value << shift) & 0xFF);
+    else if (opcode == "SHR") result = (unsigned char)(value >> shift);
+    else if (opcode == "ROL") result = (unsigned char)(((value << shift) | (value >> (8 - shift))) & 0xFF);
+    else if (opcode == "ROR") result = (unsigned char)(((value >> shift) | (value << (8 - shift))) & 0xFF);
+
+    cpu->setReg(regIndex, (int)(signed char)result);
+}
+
+// DynamicArray is the required vector/list data structure used to
+// load the .asm file into memory before execution.
+class DynamicArray {
+private:
+    string* items;
+    int capacity;
+    int length;
+
+    void grow() {
+        int newCap = capacity == 0 ? 8 : capacity * 2;
+        string* newItems = new string[newCap];
+        for (int i = 0; i < length; ++i) newItems[i] = items[i];
+        delete[] items;
+        items = newItems;
+        capacity = newCap;
+    }
+
+public:
+    // Construct an empty dynamic array
+    DynamicArray() : items(nullptr), capacity(0), length(0) {}
+
+    // Destructor releases internal buffer
+    ~DynamicArray() { delete[] items; }
+
+    // Append a string to the array (grows automatically)
+    void add(const string& s) {
+        if (length >= capacity) grow();
+        items[length++] = s;
+    }
+
+    // Retrieve an element by index
+    string get(int idx) const {
+        if (idx < 0 || idx >= length) {
+            cerr << "[ERROR] DynamicArray index out of range: " << idx << "\n";
+            exit(1);
+        }
+        return items[idx];
+    }
+
+    // Number of elements stored
+    int size() const { return length; }
+};
+
+// Runner - loads the .asm program, decodes each instruction line
+// and delegates execution to the CPU.
+class Runner {
+private:
+    CPU* cpu;               // associated CPU instance
+    DynamicArray* program;  // instruction storage (one line per element)
+
+public:
+    Runner(CPU* c);
+    ~Runner();
+
+    // Load assembly instructions from file into `program`.
+    // Empty lines are ignored.
+    void loadProgram(const string& filename);
+
+    // Execute the loaded program, instruction by instruction.
+    void run();
+
+    // Parse and execute a single instruction line.
+    void executeInstruction(const string& line);
+};
+
+Runner::Runner(CPU* c) {
+    cpu = c;
+    program = new DynamicArray();
+}
+
+Runner::~Runner() {
+    delete program;
+}
+
+// reads the .asm file line by line, skipping blank lines
+void Runner::loadProgram(const string& filename) {
+    ifstream file(filename);
+    if (!file.is_open()) {
+        cerr << "Error: could not open program file: " << filename << endl;
+        exit(1);
+    }
+
+    string line;
+    while (getline(file, line)) {
+        if (trim(line) != "") {
+            program->add(line);
+        }
+    }
+
+    file.close();
+}
+
+// executes every loaded instruction in order, then dumps machine state
+void Runner::run() {
+    for (int i = 0; i < program->size(); i++) {
+        string line = program->get(i);
+        executeInstruction(line);
+    }
+}
+
+// decodes opcode/operands and dispatches to the relevant handler. 
+//Instructions owned by other members are dispatched to
+// their respective handlers; unimplemented opcodes report a clear error
+// instead of silently doing nothing.
+void Runner::executeInstruction(const string& line) {
+    string opcode, operands;
+    if (!parseOpcodeAndOperands(line, opcode, operands)) return;
+
+    if (opcode == "MOV") {
+        Mov(cpu, operands);
+    } else if (opcode == "INPUT") {
+        execInput(cpu, operands);
+    } else if (opcode == "DISPLAY") {
+        execDisplay(cpu, operands);
+    } else if (opcode == "SHL" || opcode == "SHR" || opcode == "ROL" || opcode == "ROR") {
+        execShiftRotate(cpu, opcode, operands);
+    } else if (opcode == "ADD" || opcode == "SUB" || opcode == "MUL" || opcode == "DIV" ||
+               opcode == "INC" || opcode == "DEC" || opcode == "RESET") {
+        // wire up ArithmeticInstruction handlers here.
+        cerr << "Error: instruction '" << opcode << "' is not yet implemented (Member 3)" << endl;
+        exit(1);
+    } else if (opcode == "LOAD" || opcode == "STORE" || opcode == "PUSH" || opcode == "POP") {
+        // wire up Memory/Stack instruction handlers here.
+        cerr << "Error: instruction '" << opcode << "' is not yet implemented (Member 2)" << endl;
+        exit(1);
+    } else {
+        cerr << "Error: unknown instruction '" << opcode << "'" << endl;
+        exit(1);
+    }
+
+    cpu->incrementPC();
+}
