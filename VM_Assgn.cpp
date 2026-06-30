@@ -1,5 +1,14 @@
 #include <iostream>
 using namespace std;
+
+// ==========================================
+// FONG WEI HONG 253UC25627 - Member 1
+// ZAVIER LAY JIUN HAO - Member 2
+// JOY YU WEN 2521UC243S6 - Member 3
+// NUR DAMIA ADLINA BINTI KAMARULAZIZI 242UC244TE - Member 4
+// ==========================================
+
+
 //==================================================
 // Instruction
 // │
@@ -12,101 +21,103 @@ using namespace std;
 // ├── INCInstruction
 // ├── DECInstruction
 // └── RESETInstruction
+
+// ArithmeticIns (abstract)
+//  ├── ADD
+//  ├── SUB
+//  ├── MUL
+//  ├── DIV
+//  ├── INC
+//  ├── DEC
+//  └── RESET
+
+//# Member 3 — Instruction Hierarchy & Arithmetic
+// ### Coding
+// * Instruction base class
+// * ArithmeticInstruction class
+// * ADD
+// * SUB
+// * MUL
+// * DIV
+// * INC
+// * DEC
+// * RESET
+//
+// flags are by Member 1
 //==================================================
-
-class VirtualMachine {
-private:
-    int* stack;
-    int top;
-    int capacity;
-
-public:
-    VirtualMachine(int size = 100){
-        capacity = size;
-        stack = new int[capacity];
-        top = -1;
-    }
-
-    ~VirtualMachine() {
-        delete[] stack;
-    }
-
-    void push(int value) {
-        if (top < capacity - 1) {
-            stack[++top] = value;
-        }
-    }
-
-    int pop() {
-        if (top >= 0) {
-            return stack[top--];
-        }
-
-        //error handling
-        return 0;
-    }
-
-    bool empty() {
-        return top == -1;
-    }
-};
-
-class VirtualMachine;
+class CPU;
 
 class Instruction {
 public:
     virtual ~Instruction() {}
 
-    virtual void execute(VirtualMachine& vm) = 0; //pure virtual function
-
+    virtual void execute(CPU& cpu) = 0; //pure virtual function
+    virtual string getName() const = 0;
 };
 
 //handle specific LIFO (Last-In, First-Out) stack or register-based fetching protocols.
 class ArithmeticIns : public Instruction {
 protected:
-    virtual int compute(int a, int b) = 0;
+    virtual signed char compute(signed char a, signed char b) = 0;
 
 public:
     //Stack architecture, Right-to-Left (First out is operand B)
     void execute(CPU& cpu) override {
-        int b = cpu.stackPop(); 
-        int a = cpu.stackPop();
+        signed char b = cpu.stackPop(); 
+        signed char a = cpu.stackPop();
 
-        int result = compute(a, b);
+        signed char result = compute(a, b);
 
         // Push the calculated value back to the stack
-        cpu.stackPush(compute(a, b));
+        cpu.stackPush(result);
     }
 };
 
 // my own
 class ADDInstruction : public ArithmeticIns {
     protected:
-        int compute(int a, int b){
+        signed char compute(signed char a, signed char b) override {
             return a + b;
+        }
+
+    public:
+        string getName() const override {
+            return "ADD";
         }
 };
 
 class SUBInstruction : public ArithmeticIns {
     protected:
-        int compute(int a, int b){
+        signed char compute(signed char a, signed char b) override {
             return a - b;
+        }
+    
+    public: 
+        string getName() const override {
+            return "SUB";
         }
 };
 
 class MULInstruction : public ArithmeticIns {
     protected:
-        int compute(int a, int b){
+        signed char compute(signed char a, signed char b) override {
             return a * b;
+        }
+
+    public:
+        string getName() const override {
+            return "MUL";
         }
 };
 
 class DIVInstruction : public ArithmeticIns {
     protected:
-        int compute(int a, int b){
+        signed char compute(signed char a, signed char b) override {
             //error handling
-            if (b == 0)
+            if (b == 0){
+                cerr << "[ERROR] DIV by zero\n";
                 return 0;
+            }
             //other outputs
                 //print error
                 //halt VM
@@ -114,49 +125,45 @@ class DIVInstruction : public ArithmeticIns {
 
             return a / b;
         }
+
+    public:
+        string getName() const override {
+            return "DIV";
+        }
 };
 
 //Increment
 class INCInstruction : public Instruction { 
     public:
-        void execute(VirtualMachine& vm) {
-            int value = vm.pop();
-            vm.push(value + 1);
+        void execute(CPU& cpu) override {
+            signed char value = cpu.stackPop();
+            cpu.stackPush(value + 1);
+        }
+
+        string getName() const override {
+            return "INC";
         }
 }; 
 
 //Decrement
 class DECInstruction : public Instruction {
     public:
-        void execute(VirtualMachine& vm) {
-            int value = vm.pop();
-            vm.push(value - 1);
+        void execute(CPU& cpu) override {
+            signed char value = cpu.stackPop();
+            cpu.stackPush(value - 1);
         }
+
+    string getName() const override {
+        return "DEC";
+    }
 };  
 
 // //state/pointer reset 
 // class RESETInstruction : public Instruction {
 //     public:
-//         void execute(VirtualMachine& vm){
-//             vm.pop();
-//             vm.push(0);
+//         void execute(CPU& cpu) override {
+//            while (!cpu.stackIsEmpty()) {
+//                cpu.stackPop(); or cpu.resetPC()
 //         }
+//     }
 // }; 
-
-class IOInstruction : public Instruction {};
-class ShiftInstruct : public Instruction {};
-class MemoryInstruct : public Instruction {};
-class StackInstruct : public Instruction {};
-
-class InstructionList {
-    private:
-      Instruction** data;
-       int size ;
-       int capacity
-    
-    public:
-        add();
-        get();
-        removed();
-
-}
