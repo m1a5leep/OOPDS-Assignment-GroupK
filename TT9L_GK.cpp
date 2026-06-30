@@ -358,7 +358,6 @@ public:
 // ==========================================
 // Member 1
 // CPU class — extended to wire in Member 2's classes
-// (memory and stack are now activated)
 // ==========================================
 class CPU {
 private:
