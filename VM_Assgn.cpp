@@ -1,4 +1,6 @@
 #include <iostream>
+#include "Instruction.h"
+#include "CPU.h"
 using namespace std;
 
 // ==========================================
@@ -45,15 +47,6 @@ using namespace std;
 //
 // flags are by Member 1
 //==================================================
-class CPU;
-
-class Instruction {
-public:
-    virtual ~Instruction() {}
-
-    virtual void execute(CPU& cpu) = 0; //pure virtual function
-    virtual string getName() const = 0;
-};
 
 //handle specific LIFO (Last-In, First-Out) stack or register-based fetching protocols.
 class ArithmeticIns : public Instruction {
