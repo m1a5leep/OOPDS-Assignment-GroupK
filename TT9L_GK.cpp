@@ -288,12 +288,12 @@ public:
             cerr << "[ERROR] InstructionList remove out of range: " << i << "\n";
             return;
         }
-        delete data[i]; // free the Instruction object
         for (int j = i; j < size - 1; j++) {
-            data[j] = data[j + 1]; // shift left
+       data[j] = data[j + 1];  // shift left
         }
+        data[size - 1] = nullptr;  // clear last slot
         size--;
-    }
+        }
 
     // getSize(): how many instructions are stored
     int  getSize()  const { return size; }
