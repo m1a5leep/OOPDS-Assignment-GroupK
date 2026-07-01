@@ -40,8 +40,6 @@ public:
     }
 };
 
-// FONG WEI HONG 253UC25627 - Member 1
-
 //Represents the 8 general-purpose data registers (R0-R7).
 //Demonstrates Inheritance by deriving from the base Register class, and Polymorphism by overriding the virtual methods.
 class GeneralRegister : public Register {
@@ -59,8 +57,6 @@ public:
         return Register::getValue(); 
     }
 };
-
-// FONG WEI HONG 253UC25627 - Member 1
 
 //Manages the 4 specific system flags (Overflow, Underflow, Carry, Zero).
 //Encapsulates flag states and provides centralized logic for math evaluation.
@@ -172,7 +168,6 @@ public:
     }
 };
 
-// Zavier Lay Jiun Hao 253UC254FR - Member 2
 class StackDS {
 private:
     static const int MAX = 64;  // max 64 entries (matches UML field data[64])
