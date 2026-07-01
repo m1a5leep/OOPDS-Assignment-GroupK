@@ -879,7 +879,7 @@ public:
     int size() const { return length; }
 };
 
-// Runner - loads the .asm program, decodes each instruction line
+// Runner loads the .asm program, decodes each instruction line
 // and delegates execution to the CPU.
 class Runner {
 private:
@@ -937,7 +937,7 @@ void Runner::run() {
 }
 
 // decodes opcode/operands and dispatches to the relevant handler. 
-//Instructions owned by other members are dispatched to
+// Instructions owned by other members are dispatched to
 // their respective handlers; unimplemented opcodes report a clear error
 // instead of silently doing nothing.
 void Runner::executeInstruction(const string& line) {
@@ -967,4 +967,21 @@ void Runner::executeInstruction(const string& line) {
     }
 
     cpu->incrementPC();
+}
+
+main(int argc, char* argv[]) {
+    if (argc != 2) {
+        cerr << "Usage: " << argv[0] << " <program.asm>" << endl;
+        return 1;
+    }
+
+    FlagRegister flags;
+    CPU cpu(&flags);
+    Runner runner(&cpu);
+
+    runner.loadProgram(argv[1]);
+    runner.run();
+
+    cpu.dumpToStream(cout);
+    return 0;
 }
