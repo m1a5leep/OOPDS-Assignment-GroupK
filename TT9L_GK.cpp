@@ -495,105 +495,114 @@ public:
 // Arithmetic Instruction class
 // ==========================================
 
-//handle specific LIFO (Last-In, First-Out) stack or register-based fetching protocols.
+//handle specific LIFO (Last-In, First-Out)
+//Now, each instruction implements execute() itself
 class ArithmeticIns : public Instruction {
 protected:
-    virtual signed char compute(signed char a, signed char b) = 0;
+    int destReg;
+    int srcReg;
 
 public:
-    //Stack architecture, Right-to-Left (First out is operand B)
+    ArithmeticIns(int dest, int src)
+        : destReg(dest), srcReg(src) {}
+};
+
+// performs ADD R1, R2 
+// as R1 = R1 + R2
+class ADDInstruction : public ArithmeticIns {
+public:
+    ADDInstruction(int dest, int src)
+        : ArithmeticIns(dest, src) {}
+
     void execute(CPU& cpu) override {
-        signed char b = cpu.stackPop(); 
-        signed char a = cpu.stackPop();
+        int result =
+            cpu.getReg(destReg) + cpu.getReg(srcReg);
+        
+        cpu.setReg(destReg, result);
+    }
 
-        signed char result = compute(a, b);
-
-        // Push the calculated value back to the stack
-        cpu.stackPush(result);
+    string getName() const override {
+        return "ADD";
     }
 };
 
-// my own
-class ADDInstruction : public ArithmeticIns {
-    protected:
-        signed char compute(signed char a, signed char b) override {
-            return a + b;
-        }
-
-    public:
-        string getName() const override {
-            return "ADD";
-        }
-};
-
 class SUBInstruction : public ArithmeticIns {
-    protected:
-        signed char compute(signed char a, signed char b) override {
-            return a - b;
-        }
-    
-    public: 
-        string getName() const override {
-            return "SUB";
-        }
+public: 
+    SUBInstruction(int dest, int src)
+        : ArithmeticIns(dest, src) {}
+
+    void execute(CPU& cpu) override {
+        cpu.setReg(destReg, cpu.getReg(destReg) - cpu.getReg(srcReg));
+    }
+
+    string getName() const override {
+        return "SUB";
+    }
 };
 
 class MULInstruction : public ArithmeticIns {
-    protected:
-        signed char compute(signed char a, signed char b) override {
-            return a * b;
-        }
+public:
+    MULInstruction(int dest, int src) : ArithmeticIns(dest, src) {}
 
-    public:
-        string getName() const override {
-            return "MUL";
-        }
+    void execute(CPU& cpu) override {
+        cpu.setReg(destReg, cpu.getReg(destReg) * cpu.getReg(srcReg));
+    }
+
+    string getName() const override {
+        return "MUL";
+    }
 };
 
 class DIVInstruction : public ArithmeticIns {
-    protected:
-        signed char compute(signed char a, signed char b) override {
-            //error handling
-            if (b == 0){
-                cerr << "[ERROR] DIV by zero\n";
-                return 0;
-            }
-            //other outputs
-                //print error
-                //halt VM
-                //throw exception
+public:
+    DIVInstruction(int dest, int src) : ArithmeticIns(dest, src) {}
 
-            return a / b;
+    void execute(CPU& cpu) override {
+        int divisor = cpu.getReg(srcReg);
+
+        if (divisor = 0){
+            cerr << "[ERROR] Division by zero\n";
+            return;
         }
 
-    public:
-        string getName() const override {
-            return "DIV";
-        }
+        cpu.setReg(destReg, cpu.getReg(destReg) / divisor);
+    }
+
+    string getName() const override {
+        return "DIV";
+    }
 };
 
 //Increment
 class INCInstruction : public Instruction { 
-    public:
-        void execute(CPU& cpu) override {
-            signed char value = cpu.stackPop();
-            cpu.stackPush(value + 1);
-        }
+private:
+    int reg;
 
-        string getName() const override {
-            return "INC";
-        }
+public:
+    INCInstruction(int r) : reg(r) {}
+
+    void execute(CPU& cpu) override {
+        cpu.setReg(reg, cpu.getReg(reg) + 1);
+    }
+
+    string getName() const {
+        return "INC";
+    }
 }; 
 
 //Decrement
 class DECInstruction : public Instruction {
-    public:
-        void execute(CPU& cpu) override {
-            signed char value = cpu.stackPop();
-            cpu.stackPush(value - 1);
-        }
+private:
+    int reg;
 
-    string getName() const override {
+public:
+    INCInstruction(int r) : reg(r) {}
+
+    void execute(CPU& cpu) override {
+        cpu.setReg(reg, cpu.getReg(reg) - 1);
+    }
+
+    string getName() const {
         return "DEC";
     }
 };  
