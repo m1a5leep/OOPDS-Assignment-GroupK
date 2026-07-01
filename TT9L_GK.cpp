@@ -375,7 +375,7 @@ public:
 };
 
 // ==========================================
-// Member 1
+// FONG WEI HONG 253UC25627 - Member 1
 // CPU class - extended to wire in Member 2's classes
 // ==========================================
 class CPU {
