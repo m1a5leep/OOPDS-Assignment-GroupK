@@ -495,6 +495,15 @@ public:
 // Arithmetic Instruction class
 // ==========================================
 
+// cLass Instruction
+class Instruction {
+public:
+    virtual ~Instruction() {}
+
+    virtual void execute(CPU& cpu) = 0;
+    virtual string getName() const = 0;
+};
+
 //handle specific LIFO (Last-In, First-Out)
 //Now, each instruction implements execute() itself
 class ArithmeticIns : public Instruction {
