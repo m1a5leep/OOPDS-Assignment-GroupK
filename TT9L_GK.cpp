@@ -121,10 +121,6 @@ public:
 class Memory;
 class Instruction;
 
-// ==========================================
-// Zavier Lay Jiun Hao 253UC254FR - Member 2
-// ==========================================
-
 class Memory {
 private:
     static const int SIZE = 64;   // 64 bytes total, address 0-63
@@ -373,11 +369,7 @@ public:
     // getSize(): how many items in queue
     int  getSize() const { return sz; }
 };
-
-// ==========================================
-// FONG WEI HONG 253UC25627 - Member 1
-// CPU class - extended to wire in Member 2's classes
-// ==========================================
+// CPU class -Member 1 extended to wire in Member 2 classes
 class CPU {
 private:
     GeneralRegister registers[8]; // R0 to R7
