@@ -14,43 +14,56 @@ using namespace std;
 // NUR DAMIA ADLINA BINTI KAMARULAZIZI 242UC244TE - Member 4
 // ==========================================
 
+//Acts as a base class for all registers.
+//Demonstrates Encapsulation by hiding the 'value' variableand restricting access to getters and setters.
 class Register {
 private:
     signed char value; // 1 byte signed char (-128 to 127)
 
 public:
+    // Constructor: Initializes the register value to 0
     Register() {
         value = 0;
     }
 
-    virtual ~Register() {}
+    // Virtual Destructor: Ensures proper cleanup of derived classes (Polymorphism)
+    virtual ~Register() {} 
 
+    // Setter: Updates the register's value safely
     virtual void setValue(signed char val) {
         value = val;
     }
 
+    // Getter: Retrieves the register's value without modifying it
     virtual signed char getValue() const {
         return value;
     }
 };
 
 // FONG WEI HONG 253UC25627 - Member 1
+
+//Represents the 8 general-purpose data registers (R0-R7).
+//Demonstrates Inheritance by deriving from the base Register class, and Polymorphism by overriding the virtual methods.
 class GeneralRegister : public Register {
 public:
+    // Constructor: Calls the base class constructor
     GeneralRegister() : Register() {}
 
-    // Explicitly overriding the base class methods to match your specific design
+    // Explicitly overrides the base setter to pass data safely to the private parent variable
     void setValue(signed char val) override {
-        // Must call the parent method because 'value' is private in Register
-        Register::setValue(val);
+        Register::setValue(val); 
     }
 
+    // Explicitly overrides the base getter to retrieve data from the private parent variable
     signed char getValue() const override {
-        return Register::getValue();
+        return Register::getValue(); 
     }
 };
 
 // FONG WEI HONG 253UC25627 - Member 1
+
+//Manages the 4 specific system flags (Overflow, Underflow, Carry, Zero).
+//Encapsulates flag states and provides centralized logic for math evaluation.
 class FlagRegister {
 private:
     bool OF; // Overflow Flag
@@ -59,10 +72,11 @@ private:
     bool ZF; // Zero Flag
 
 public:
+    // Constructor: Initialized all flags to false (0) at startup
     FlagRegister() {
         resetAllFlags();
     }
-
+    // Getters and Setters for individual flags
     void setOF(bool val) { OF = val; }
     bool getOF() const { return OF; }
 
@@ -75,6 +89,7 @@ public:
     void setZF(bool val) { ZF = val; }
     bool getZF() const { return ZF; }
 
+    // Helper Function: Resets all flags back to 0
     void resetAllFlags() {
         OF = false;
         UF = false;
@@ -82,22 +97,22 @@ public:
         ZF = false;
     }
 
-    // Helper to evaluate a math result and set flags accordingly
+    // Main Logic Function: Evaluates the raw integer result of an arithmetic operation
+    // (ADD, SUB, MUL, DIV) and triggers the appropriate flags based on 8-bit limits.
     void updateFlagsFromMath(int rawResult) {
-        resetAllFlags();
-
+        resetAllFlags(); // Clear previous states
+        
         if (rawResult == 0) {
-            setZF(true);
+            setZF(true); // Result is exactly zero
         }
         if (rawResult > 127) {
-            setOF(true);
+            setOF(true); // Exceeded signed positive limit
         }
         if (rawResult < -128) {
-            setUF(true);
+            setUF(true); // Fell below signed negative limit
         }
-        // Carry flag logic: if the result requires more than 8 bits
         if (rawResult > 255 || rawResult < -256) {
-            setCF(true);
+            setCF(true); // Exceeded total 8-bit capacity
         }
     }
 };
