@@ -495,7 +495,7 @@ public:
 // Arithmetic Instruction class
 // ==========================================
 
-// cLass Instruction
+// abstract class Instruction
 class Instruction {
 public:
     virtual ~Instruction() {}
@@ -504,18 +504,22 @@ public:
     virtual string getName() const = 0;
 };
 
-//handle specific LIFO (Last-In, First-Out)
-//Now, each instruction implements execute() itself
+
+// ArithmeticIns inherits from Instruction
+//=================================
 class ArithmeticIns : public Instruction {
 protected:
-    int destReg;
-    int srcReg;
+    int destReg;    // register numbers hidden inside class
+    int srcReg;     // only derived classes can access them
 
 public:
     ArithmeticIns(int dest, int src)
         : destReg(dest), srcReg(src) {}
 };
 
+
+// ADDInstruction inherits from ArithmeticIns
+//=================================
 // performs ADD R1, R2 
 // as R1 = R1 + R2
 class ADDInstruction : public ArithmeticIns {
@@ -523,8 +527,8 @@ public:
     ADDInstruction(int dest, int src)
         : ArithmeticIns(dest, src) {}
 
-    void execute(CPU& cpu) override {
-        int result =
+    void execute(CPU& cpu) override {   // overrides pure virtual functions
+        int result =                    // from Instruction/runtime polymorphsm
             cpu.getReg(destReg) + cpu.getReg(srcReg);
         
         cpu.setReg(destReg, result);
@@ -535,13 +539,16 @@ public:
     }
 };
 
+
+// SUBInstruction inherits from ArithmeticIns
+//=================================
 class SUBInstruction : public ArithmeticIns {
 public: 
     SUBInstruction(int dest, int src)
         : ArithmeticIns(dest, src) {}
 
-    void execute(CPU& cpu) override {
-        cpu.setReg(destReg, cpu.getReg(destReg) - cpu.getReg(srcReg));
+    void execute(CPU& cpu) override {                                   // overrides pure virtual functions
+        cpu.setReg(destReg, cpu.getReg(destReg) - cpu.getReg(srcReg));  // from Instruction/runtime polymorphsm
     }
 
     string getName() const override {
@@ -549,12 +556,15 @@ public:
     }
 };
 
+
+// MULInstruction inherits from ArithmeticIns
+//=================================
 class MULInstruction : public ArithmeticIns {
 public:
     MULInstruction(int dest, int src) : ArithmeticIns(dest, src) {}
 
-    void execute(CPU& cpu) override {
-        cpu.setReg(destReg, cpu.getReg(destReg) * cpu.getReg(srcReg));
+    void execute(CPU& cpu) override {                                   // overrides pure virtual functions
+        cpu.setReg(destReg, cpu.getReg(destReg) * cpu.getReg(srcReg));  // from Instruction/runtime polymorphsm
     }
 
     string getName() const override {
@@ -562,14 +572,17 @@ public:
     }
 };
 
+
+// DIVInstruction inherits from ArithmeticIns
+//=================================
 class DIVInstruction : public ArithmeticIns {
 public:
     DIVInstruction(int dest, int src) : ArithmeticIns(dest, src) {}
 
-    void execute(CPU& cpu) override {
-        int divisor = cpu.getReg(srcReg);
+    void execute(CPU& cpu) override {       // overrides pure virtual functions
+        int divisor = cpu.getReg(srcReg);   // fron Instruction/runtime polymorphsm
 
-        if (divisor = 0){
+        if (divisor == 0){
             cerr << "[ERROR] Division by zero\n";
             return;
         }
@@ -582,51 +595,45 @@ public:
     }
 };
 
+
+// INCInstruction inherits directly from Instruction
+//=================================
 //Increment
 class INCInstruction : public Instruction { 
 private:
-    int reg;
-
+    int reg;    // register index is private
+                // only member functions of INCInstruction can use it
 public:
     INCInstruction(int r) : reg(r) {}
 
-    void execute(CPU& cpu) override {
-        cpu.setReg(reg, cpu.getReg(reg) + 1);
+    void execute(CPU& cpu) override {           // overrides pure virtual functions
+        cpu.setReg(reg, cpu.getReg(reg) + 1);   // from Instruction/runtime polymorphsm
     }
 
-    string getName() const {
+    string getName() const override {
         return "INC";
     }
 }; 
 
+
+// DECInstruction inherits directly from Instruction
+//=================================
 //Decrement
 class DECInstruction : public Instruction {
 private:
-    int reg;
-
+    int reg;    // register index is private
+                // only member functions of DECInstruction can use it
 public:
-    INCInstruction(int r) : reg(r) {}
+    DECInstruction(int r) : reg(r) {}
 
-    void execute(CPU& cpu) override {
-        cpu.setReg(reg, cpu.getReg(reg) - 1);
+    void execute(CPU& cpu) override {           // overrides pure virtual functions
+        cpu.setReg(reg, cpu.getReg(reg) - 1);   // fron Instruction/runtime polymorphsm
     }
 
-    string getName() const {
+    string getName() const override {
         return "DEC";
     }
-};  
-
-// //state/pointer reset 
-// class RESETInstruction : public Instruction {
-//     public:
-//         void execute(CPU& cpu) override {
-//            while (!cpu.stackIsEmpty()) {
-//                cpu.stackPop(); or cpu.resetPC()
-//         }
-//     }
-// }; 
-
-
+}; 
 
 // trim(): remove leading/trailing whitespace from a string
 static string trim(const string& text) {
@@ -888,7 +895,7 @@ public:
     int size() const { return length; }
 };
 
-// Runner loads the .asm program, decodes each instruction line
+// Runner - loads the .asm program, decodes each instruction line
 // and delegates execution to the CPU.
 class Runner {
 private:
@@ -946,7 +953,7 @@ void Runner::run() {
 }
 
 // decodes opcode/operands and dispatches to the relevant handler. 
-// Instructions owned by other members are dispatched to
+//Instructions owned by other members are dispatched to
 // their respective handlers; unimplemented opcodes report a clear error
 // instead of silently doing nothing.
 void Runner::executeInstruction(const string& line) {
@@ -976,21 +983,4 @@ void Runner::executeInstruction(const string& line) {
     }
 
     cpu->incrementPC();
-}
-
-main(int argc, char* argv[]) {
-    if (argc != 2) {
-        cerr << "Usage: " << argv[0] << " <program.asm>" << endl;
-        return 1;
-    }
-
-    FlagRegister flags;
-    CPU cpu(&flags);
-    Runner runner(&cpu);
-
-    runner.loadProgram(argv[1]);
-    runner.run();
-
-    cpu.dumpToStream(cout);
-    return 0;
 }
