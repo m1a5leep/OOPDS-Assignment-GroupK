@@ -857,11 +857,11 @@ static void execShiftRotate(CPU* cpu, const string& opcode, const string& operan
 // load the .asm file into memory before execution.
 class DynamicArray {
 private:
-    string* items;
-    int capacity;
-    int length;
+    string* items;      // Encapsulation: internal array is hidden from other classes
+    int capacity;       // Encapsulation: current storage capacity
+    int length;         // Encapsulation: number of stored instructions
 
-    void grow() {
+    void grow() {       // double the capacity when full
         int newCap = capacity == 0 ? 8 : capacity * 2;
         string* newItems = new string[newCap];
         for (int i = 0; i < length; ++i) newItems[i] = items[i];
@@ -900,11 +900,11 @@ public:
 // and delegates execution to the CPU.
 class Runner {
 private:
-    CPU* cpu;               // associated CPU instance
-    DynamicArray* program;  // instruction storage (one line per element)
+    CPU* cpu;               // Aggregation: Runner uses an existing CPU object
+    DynamicArray* program;  // Composition: Runner owns the instruction storage
 
 public:
-    Runner(CPU* c);
+    Runner(CPU* c);      // Constructor receives an existing CPU object
     ~Runner();
 
     // Load assembly instructions from file into `program`.
@@ -919,26 +919,26 @@ public:
 };
 
 Runner::Runner(CPU* c) {
-    cpu = c;
-    program = new DynamicArray();
+    cpu = c;                             // Aggregation: stores reference to existing CPU
+    program = new DynamicArray();        // Composition: Runner creates its own DynamicArray
 }
 
 Runner::~Runner() {
-    delete program;
+    delete program;              // Composition: releases owned object
 }
 
 // reads the .asm file line by line, skipping blank lines
 void Runner::loadProgram(const string& filename) {
-    ifstream file(filename);
+    ifstream file(filename);          // Opens the assembly source file
     if (!file.is_open()) {
         cerr << "Error: could not open program file: " << filename << endl;
         exit(1);
     }
 
     string line;
-    while (getline(file, line)) {
+    while (getline(file, line)) {     // Reads instructions line by line
         if (trim(line) != "") {
-            program->add(line);
+            program->add(line);       // Stores instruction into DynamicArray
         }
     }
 
@@ -948,13 +948,13 @@ void Runner::loadProgram(const string& filename) {
 // executes every loaded instruction in order, then dumps machine state
 void Runner::run() {
     for (int i = 0; i < program->size(); i++) {
-        string line = program->get(i);
-        executeInstruction(line);
+        string line = program->get(i);       // Retrieves current instruction
+        executeInstruction(line);            // Executes parsed instruction
     }
 }
 
 // decodes opcode/operands and dispatches to the relevant handler. 
-//Instructions owned by other members are dispatched to
+// Instructions owned by other members are dispatched to
 // their respective handlers; unimplemented opcodes report a clear error
 // instead of silently doing nothing.
 static void handleArithmetic(CPU* cpu, const string& op, const string& args) {
@@ -1007,8 +1007,8 @@ static void handleStack(CPU* cpu, const string& op, const string& args) {
 // decodes opcode/operands and dispatches to the relevant handler cleanly.
 void Runner::executeInstruction(const string& line) {
     string op, args;
-    if (!parseOpcodeAndOperands(line, op, args)) return;
-
+    if (!parseOpcodeAndOperands(line, op, args)) return;    // Parses the instruction format
+    
     if (op == "MOV") Mov(cpu, args);
     else if (op == "INPUT") execInput(cpu, args);
     else if (op == "DISPLAY") execDisplay(cpu, args);
