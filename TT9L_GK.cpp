@@ -117,6 +117,7 @@ public:
 class Memory;
 class Instruction;
 
+// Zavier Lay Jiun hao member2 253UC254FR
 class Memory {
 private:
     static const int SIZE = 64;   // 64 bytes total, address 0-63
