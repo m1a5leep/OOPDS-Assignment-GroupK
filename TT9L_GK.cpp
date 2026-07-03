@@ -364,6 +364,7 @@ public:
     // getSize(): how many items in queue
     int  getSize() const { return sz; }
 };
+
 // CPU class -Member 1 extended to wire in Member 2 classes
 class CPU {
 private:
@@ -968,19 +969,186 @@ void Runner::executeInstruction(const string& line) {
         execDisplay(cpu, operands);
     } else if (opcode == "SHL" || opcode == "SHR" || opcode == "ROL" || opcode == "ROR") {
         execShiftRotate(cpu, opcode, operands);
-    } else if (opcode == "ADD" || opcode == "SUB" || opcode == "MUL" || opcode == "DIV" ||
-               opcode == "INC" || opcode == "DEC" || opcode == "RESET") {
-        // wire up ArithmeticInstruction handlers here.
-        cerr << "Error: instruction '" << opcode << "' is not yet implemented (Member 3)" << endl;
+    } else if (opcode == "ADD") {
+    string left, right;
+    if (!splitOperands(operands, left, right)) {
+        cerr << "Error: ADD requires two operands" << endl;
         exit(1);
-    } else if (opcode == "LOAD" || opcode == "STORE" || opcode == "PUSH" || opcode == "POP") {
-        // wire up Memory/Stack instruction handlers here.
-        cerr << "Error: instruction '" << opcode << "' is not yet implemented (Member 2)" << endl;
+    }
+    int dest, src;
+    if (!parseRegisterIndex(left, dest) || !parseRegisterIndex(right, src)) {
+        cerr << "Error: invalid registers in ADD" << endl;
         exit(1);
-    } else {
-        cerr << "Error: unknown instruction '" << opcode << "'" << endl;
+    }
+    ADDInstruction instr(dest, src);
+    instr.execute(*cpu);
+
+    } else if (opcode == "SUB") {
+    string left, right;
+    if (!splitOperands(operands, left, right)) {
+        cerr << "Error: SUB requires two operands" << endl;
+        exit(1);
+    }
+    int dest, src;
+    if (!parseRegisterIndex(left, dest) || !parseRegisterIndex(right, src)) {
+        cerr << "Error: invalid registers in SUB" << endl;
+        exit(1);
+    }
+    SUBInstruction instr(dest, src);
+    instr.execute(*cpu);
+
+    } else if (opcode == "MUL") {
+    string left, right;
+    if (!splitOperands(operands, left, right)) {
+        cerr << "Error: MUL requires two operands" << endl;
+        exit(1);
+    }
+    int dest, src;
+    if (!parseRegisterIndex(left, dest) || !parseRegisterIndex(right, src)) {
+        cerr << "Error: invalid registers in MUL" << endl;
+        exit(1);
+    }
+    MULInstruction instr(dest, src);
+    instr.execute(*cpu);
+
+    } else if (opcode == "DIV") {
+    string left, right;
+    if (!splitOperands(operands, left, right)) {
+        cerr << "Error: DIV requires two operands" << endl;
+        exit(1);
+    }
+    int dest, src;
+    if (!parseRegisterIndex(left, dest) || !parseRegisterIndex(right, src)) {
+        cerr << "Error: invalid registers in DIV" << endl;
+        exit(1);
+    }
+    DIVInstruction instr(dest, src);
+    instr.execute(*cpu);
+
+    } else if (opcode == "INC") {
+    int reg;
+    if (!parseRegisterIndex(operands, reg)) {
+        cerr << "Error: INC requires a register operand" << endl;
+        exit(1);
+    }
+    INCInstruction instr(reg);
+    instr.execute(*cpu);
+
+    } else if (opcode == "DEC") {
+    int reg;
+    if (!parseRegisterIndex(operands, reg)) {
+        cerr << "Error: DEC requires a register operand" << endl;
+        exit(1);
+    }
+    DECInstruction instr(reg);
+    instr.execute(*cpu);
+
+    } else if (opcode == "RESET") {
+    for (int i = 0; i < 8; i++) {
+        cpu->setRegNoFlag(i, 0);
+    }
+    cpu->getFlags()->resetAllFlags();
+    } else if (opcode == "LOAD") {
+    string left, right;
+    if (!splitOperands(operands, left, right)) {
+        cerr << "Error: LOAD requires two operands" << endl;
         exit(1);
     }
 
+    int regIndex, addr;
+    // LOAD R0, [20] → 从内存地址 20 读到 R0
+    if (parseRegisterIndex(left, regIndex) && parseBracketedAddress(right, addr)) {
+        signed char val = cpu->memRead(addr);
+        cpu->setReg(regIndex, (int)val);
+    } else if (parseRegisterIndex(left, regIndex) && parseBracketedRegister(right, addr)) {
+        // LOAD R0, [R1] → 从寄存器 R1 指向的地址读到 R0
+        int memAddr = (int)(unsigned char)cpu->getRegister(addr).getValue();
+        signed char val = cpu->memRead(memAddr);
+        cpu->setReg(regIndex, (int)val);
+    } else {
+        cerr << "Error: invalid operands in LOAD: " << left << ", " << right << endl;
+        exit(1);
+    }
+
+    } else if (opcode == "STORE") {
+    string left, right;
+    if (!splitOperands(operands, left, right)) {
+        cerr << "Error: STORE requires two operands" << endl;
+        exit(1);
+    }
+
+    int regIndex, addr, imm;
+    // STORE [20], R0 → 把 R0 的值写入内存地址 20
+    if (parseBracketedAddress(left, addr) && parseRegisterIndex(right, regIndex)) {
+        signed char val = cpu->getRegister(regIndex).getValue();
+        cpu->memWrite(addr, val);
+    } else if (parseBracketedAddress(left, addr) && parseImmediate(right, imm)) {
+        // STORE [20], 5 → 把立即数 5 写入内存地址 20
+        cpu->memWrite(addr, (signed char)imm);
+    } else {
+        cerr << "Error: invalid operands in STORE: " << left << ", " << right << endl;
+        exit(1);
+    }
+
+    } else if (opcode == "PUSH") {
+    int regIndex;
+    if (!parseRegisterIndex(operands, regIndex)) {
+        cerr << "Error: PUSH requires a register operand" << endl;
+        exit(1);
+    }
+    signed char val = cpu->getRegister(regIndex).getValue();
+    cpu->stackPush(val);
+
+    } else if (opcode == "POP") {
+    int regIndex;
+    if (!parseRegisterIndex(operands, regIndex)) {
+        cerr << "Error: POP requires a register operand" << endl;
+        exit(1);
+    }
+    signed char val = cpu->stackPop();
+    cpu->setReg(regIndex, val);
+    }
     cpu->incrementPC();
+}
+
+
+// ==========================================
+// MAIN EXECUTION ENTRY POINT 
+// ==========================================
+int main() {
+    string filename;
+    
+    //Get the filename from the user using standard cin
+    cout << "Enter the name of the assembly file (e.g., program.asm): ";
+    cin >> filename;
+
+    //Initialize Virtual Machine Components
+    FlagRegister systemFlags;
+    CPU myCPU(&systemFlags);
+    Runner runner(&myCPU);
+
+    //Load and Execute the Assembly Program
+    cout << "Loading assembly program from: " << filename << "...\n";
+    runner.loadProgram(filename);
+    
+    cout << "Executing instructions...\n";
+    runner.run();
+
+    //Output Generation Requirement (Screen and File)
+    cout << "\n=== Final Virtual Machine State ===\n";
+    myCPU.dumpToStream(cout);
+
+    string outFilename = "output.txt";
+    ofstream outFile(outFilename);
+    
+    if (outFile.is_open()) {
+        myCPU.dumpToStream(outFile);
+        outFile.close();
+        cout << "\n[SUCCESS] Final state successfully saved to " << outFilename << "\n";
+    } else {
+        // Using cout here instead of cerr to be strictly safe
+        cout << "\n[ERROR] Could not create output file: " << outFilename << "\n";
+    }
+
+    return 0;
 }
