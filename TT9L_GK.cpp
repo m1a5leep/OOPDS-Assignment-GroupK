@@ -957,160 +957,73 @@ void Runner::run() {
 //Instructions owned by other members are dispatched to
 // their respective handlers; unimplemented opcodes report a clear error
 // instead of silently doing nothing.
-void Runner::executeInstruction(const string& line) {
-    string opcode, operands;
-    if (!parseOpcodeAndOperands(line, opcode, operands)) return;
-
-    if (opcode == "MOV") {
-        Mov(cpu, operands);
-    } else if (opcode == "INPUT") {
-        execInput(cpu, operands);
-    } else if (opcode == "DISPLAY") {
-        execDisplay(cpu, operands);
-    } else if (opcode == "SHL" || opcode == "SHR" || opcode == "ROL" || opcode == "ROR") {
-        execShiftRotate(cpu, opcode, operands);
-    } else if (opcode == "ADD") {
+static void handleArithmetic(CPU* cpu, const string& op, const string& args) {
     string left, right;
-    if (!splitOperands(operands, left, right)) {
-        cerr << "Error: ADD requires two operands" << endl;
-        exit(1);
-    }
+    if (!splitOperands(args, left, right)) { cout << "Error: " << op << " requires 2 operands\n"; exit(1); }
     int dest, src;
-    if (!parseRegisterIndex(left, dest) || !parseRegisterIndex(right, src)) {
-        cerr << "Error: invalid registers in ADD" << endl;
-        exit(1);
-    }
-    ADDInstruction instr(dest, src);
-    instr.execute(*cpu);
+    if (!parseRegisterIndex(left, dest) || !parseRegisterIndex(right, src)) { cout << "Error: invalid registers\n"; exit(1); }
 
-    } else if (opcode == "SUB") {
-    string left, right;
-    if (!splitOperands(operands, left, right)) {
-        cerr << "Error: SUB requires two operands" << endl;
-        exit(1);
-    }
-    int dest, src;
-    if (!parseRegisterIndex(left, dest) || !parseRegisterIndex(right, src)) {
-        cerr << "Error: invalid registers in SUB" << endl;
-        exit(1);
-    }
-    SUBInstruction instr(dest, src);
-    instr.execute(*cpu);
-
-    } else if (opcode == "MUL") {
-    string left, right;
-    if (!splitOperands(operands, left, right)) {
-        cerr << "Error: MUL requires two operands" << endl;
-        exit(1);
-    }
-    int dest, src;
-    if (!parseRegisterIndex(left, dest) || !parseRegisterIndex(right, src)) {
-        cerr << "Error: invalid registers in MUL" << endl;
-        exit(1);
-    }
-    MULInstruction instr(dest, src);
-    instr.execute(*cpu);
-
-    } else if (opcode == "DIV") {
-    string left, right;
-    if (!splitOperands(operands, left, right)) {
-        cerr << "Error: DIV requires two operands" << endl;
-        exit(1);
-    }
-    int dest, src;
-    if (!parseRegisterIndex(left, dest) || !parseRegisterIndex(right, src)) {
-        cerr << "Error: invalid registers in DIV" << endl;
-        exit(1);
-    }
-    DIVInstruction instr(dest, src);
-    instr.execute(*cpu);
-
-    } else if (opcode == "INC") {
-    int reg;
-    if (!parseRegisterIndex(operands, reg)) {
-        cerr << "Error: INC requires a register operand" << endl;
-        exit(1);
-    }
-    INCInstruction instr(reg);
-    instr.execute(*cpu);
-
-    } else if (opcode == "DEC") {
-    int reg;
-    if (!parseRegisterIndex(operands, reg)) {
-        cerr << "Error: DEC requires a register operand" << endl;
-        exit(1);
-    }
-    DECInstruction instr(reg);
-    instr.execute(*cpu);
-
-    } else if (opcode == "RESET") {
-    for (int i = 0; i < 8; i++) {
-        cpu->setRegNoFlag(i, 0);
-    }
-    cpu->getFlags()->resetAllFlags();
-    } else if (opcode == "LOAD") {
-    string left, right;
-    if (!splitOperands(operands, left, right)) {
-        cerr << "Error: LOAD requires two operands" << endl;
-        exit(1);
-    }
-
-    int regIndex, addr;
-    // LOAD R0, [20] → 从内存地址 20 读到 R0
-    if (parseRegisterIndex(left, regIndex) && parseBracketedAddress(right, addr)) {
-        signed char val = cpu->memRead(addr);
-        cpu->setReg(regIndex, (int)val);
-    } else if (parseRegisterIndex(left, regIndex) && parseBracketedRegister(right, addr)) {
-        // LOAD R0, [R1] → 从寄存器 R1 指向的地址读到 R0
-        int memAddr = (int)(unsigned char)cpu->getRegister(addr).getValue();
-        signed char val = cpu->memRead(memAddr);
-        cpu->setReg(regIndex, (int)val);
-    } else {
-        cerr << "Error: invalid operands in LOAD: " << left << ", " << right << endl;
-        exit(1);
-    }
-
-    } else if (opcode == "STORE") {
-    string left, right;
-    if (!splitOperands(operands, left, right)) {
-        cerr << "Error: STORE requires two operands" << endl;
-        exit(1);
-    }
-
-    int regIndex, addr, imm;
-    // STORE [20], R0 → 把 R0 的值写入内存地址 20
-    if (parseBracketedAddress(left, addr) && parseRegisterIndex(right, regIndex)) {
-        signed char val = cpu->getRegister(regIndex).getValue();
-        cpu->memWrite(addr, val);
-    } else if (parseBracketedAddress(left, addr) && parseImmediate(right, imm)) {
-        // STORE [20], 5 → 把立即数 5 写入内存地址 20
-        cpu->memWrite(addr, (signed char)imm);
-    } else {
-        cerr << "Error: invalid operands in STORE: " << left << ", " << right << endl;
-        exit(1);
-    }
-
-    } else if (opcode == "PUSH") {
-    int regIndex;
-    if (!parseRegisterIndex(operands, regIndex)) {
-        cerr << "Error: PUSH requires a register operand" << endl;
-        exit(1);
-    }
-    signed char val = cpu->getRegister(regIndex).getValue();
-    cpu->stackPush(val);
-
-    } else if (opcode == "POP") {
-    int regIndex;
-    if (!parseRegisterIndex(operands, regIndex)) {
-        cerr << "Error: POP requires a register operand" << endl;
-        exit(1);
-    }
-    signed char val = cpu->stackPop();
-    cpu->setReg(regIndex, val);
-    }
-    cpu->incrementPC();
+    if (op == "ADD") { ADDInstruction i(dest, src); i.execute(*cpu); }
+    else if (op == "SUB") { SUBInstruction i(dest, src); i.execute(*cpu); }
+    else if (op == "MUL") { MULInstruction i(dest, src); i.execute(*cpu); }
+    else if (op == "DIV") { DIVInstruction i(dest, src); i.execute(*cpu); }
 }
 
+static void handleSingleOpMath(CPU* cpu, const string& op, const string& args) {
+    int reg;
+    if (!parseRegisterIndex(args, reg)) { cout << "Error: " << op << " requires a register\n"; exit(1); }
+    if (op == "INC") { INCInstruction i(reg); i.execute(*cpu); }
+    else if (op == "DEC") { DECInstruction i(reg); i.execute(*cpu); }
+}
+
+static void handleLoadStore(CPU* cpu, const string& op, const string& args) {
+    string left, right;
+    if (!splitOperands(args, left, right)) { cout << "Error: " << op << " requires 2 operands\n"; exit(1); }
+    int reg, addr, imm;
+
+    if (op == "LOAD") {
+        if (parseRegisterIndex(left, reg) && parseBracketedAddress(right, addr)) {
+            cpu->setReg(reg, (int)cpu->memRead(addr));
+        } else if (parseRegisterIndex(left, reg) && parseBracketedRegister(right, addr)) {
+            int memAddr = (int)(unsigned char)cpu->getRegister(addr).getValue();
+            cpu->setReg(reg, (int)cpu->memRead(memAddr));
+        }
+    } else if (op == "STORE") {
+        if (parseBracketedAddress(left, addr) && parseRegisterIndex(right, reg)) {
+            cpu->memWrite(addr, cpu->getRegister(reg).getValue());
+        } else if (parseBracketedAddress(left, addr) && parseImmediate(right, imm)) {
+            cpu->memWrite(addr, (signed char)imm);
+        }
+    }
+}
+
+static void handleStack(CPU* cpu, const string& op, const string& args) {
+    int reg;
+    if (!parseRegisterIndex(args, reg)) { cout << "Error: " << op << " requires a register\n"; exit(1); }
+    if (op == "PUSH") { cpu->stackPush(cpu->getRegister(reg).getValue()); }
+    else if (op == "POP") { cpu->setReg(reg, cpu->stackPop()); }
+}
+
+// decodes opcode/operands and dispatches to the relevant handler cleanly.
+void Runner::executeInstruction(const string& line) {
+    string op, args;
+    if (!parseOpcodeAndOperands(line, op, args)) return;
+
+    if (op == "MOV") Mov(cpu, args);
+    else if (op == "INPUT") execInput(cpu, args);
+    else if (op == "DISPLAY") execDisplay(cpu, args);
+    else if (op == "SHL" || op == "SHR" || op == "ROL" || op == "ROR") execShiftRotate(cpu, op, args);
+    else if (op == "ADD" || op == "SUB" || op == "MUL" || op == "DIV") handleArithmetic(cpu, op, args);
+    else if (op == "INC" || op == "DEC") handleSingleOpMath(cpu, op, args);
+    else if (op == "LOAD" || op == "STORE") handleLoadStore(cpu, op, args);
+    else if (op == "PUSH" || op == "POP") handleStack(cpu, op, args);
+    else if (op == "RESET") {
+        for (int i = 0; i < 8; i++) cpu->setRegNoFlag(i, 0);
+        cpu->getFlags()->resetAllFlags();
+    } else cout << "Error: unknown instruction\n";
+
+    cpu->incrementPC();
+}
 
 // ==========================================
 // MAIN EXECUTION ENTRY POINT 
