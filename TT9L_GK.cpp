@@ -896,7 +896,12 @@ public:
     int size() const { return length; }
 };
 
-// Runner - loads the .asm program, decodes each instruction line
+// ==========================================
+// Member 4
+// Runner class
+// =========================================
+
+// loads the .asm program, decodes each instruction line
 // and delegates execution to the CPU.
 class Runner {
 private:
