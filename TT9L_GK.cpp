@@ -1065,7 +1065,6 @@ int main() {
         outFile.close();
         cout << "\n[SUCCESS] Final state successfully saved to " << outFilename << "\n";
     } else {
-        // Using cout here instead of cout to be strictly safe
         cout << "\n[ERROR] Could not create output file: " << outFilename << "\n";
     }
 
