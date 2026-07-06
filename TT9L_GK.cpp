@@ -132,7 +132,7 @@ public:
     // write(): store one byte at the given address
     void write(int address, signed char value) {
         if (address < 0 || address >= SIZE) {
-            cerr << "[ERROR] Memory write out of range: " << address << "\n";
+            cout << "[ERROR] Memory write out of range: " << address << "\n";
             return;
         }
         memory[address] = value;
@@ -141,7 +141,7 @@ public:
     // read(): fetch one byte from the given address
     signed char read(int address) const {
         if (address < 0 || address >= SIZE) {
-            cerr << "[ERROR] Memory read out of range: " << address << "\n";
+            cout << "[ERROR] Memory read out of range: " << address << "\n";
             return 0;
         }
         return memory[address];
@@ -186,7 +186,7 @@ public:
     // push(): put a value on top of the stack, crash if full
     void push(signed char val) {
         if (top >= MAX - 1) {
-            cerr << "[CRASH] Stack overflow - stack is full.\n";
+            cout << "[CRASH] Stack overflow - stack is full.\n";
             exit(1);
         }
         top++;
@@ -196,7 +196,7 @@ public:
     // pop(): remove and return top value
     signed char pop() {
         if (isEmpty()) {
-            cerr << "[CRASH] Stack underflow - cannot pop from empty stack.\n";
+            cout << "[CRASH] Stack underflow - cannot pop from empty stack.\n";
             exit(1);
         }
         signed char val = data[top];
@@ -208,7 +208,7 @@ public:
     // peek(): view top value without removing it
     signed char peek() const {
         if (isEmpty()) {
-            cerr << "[ERROR] Stack is empty - cannot peek.\n";
+            cout << "[ERROR] Stack is empty - cannot peek.\n";
             exit(1);
         }
         return data[top];
@@ -268,7 +268,7 @@ public:
     // get(): return the Instruction pointer at index i
     Instruction* get(int i) const {
         if (i < 0 || i >= size) {
-            cerr << "[ERROR] InstructionList index out of range: " << i << "\n";
+            cout << "[ERROR] InstructionList index out of range: " << i << "\n";
             return nullptr;
         }
         return data[i];
@@ -277,7 +277,7 @@ public:
     // remove(): delete the Instruction object at index i and shift remaining
     void remove(int i) {
         if (i < 0 || i >= size) {
-            cerr << "[ERROR] InstructionList remove out of range: " << i << "\n";
+            cout << "[ERROR] InstructionList remove out of range: " << i << "\n";
             return;
         }
         for (int j = i; j < size - 1; j++) {
@@ -336,7 +336,7 @@ public:
     // dequeue(): remove and return the front string
     string dequeue() {
         if (isEmpty()) {
-            cerr << "[ERROR] StringQueue is empty - cannot dequeue.\n";
+            cout << "[ERROR] StringQueue is empty - cannot dequeue.\n";
             exit(1);
         }
         Node*  tmp = head;
@@ -353,7 +353,7 @@ public:
     // front(): view the front item without removing it
     string front() const {
         if (isEmpty()) {
-            cerr << "[ERROR] StringQueue is empty - cannot peek.\n";
+            cout << "[ERROR] StringQueue is empty - cannot peek.\n";
             exit(1);
         }
         return head->val;
@@ -585,7 +585,7 @@ public:
         int divisor = cpu.getReg(srcReg);   // fron Instruction/runtime polymorphsm
 
         if (divisor == 0){
-            cerr << "[ERROR] Division by zero\n";
+            cout << "[ERROR] Division by zero\n";
             return;
         }
 
@@ -765,13 +765,13 @@ static bool parseOpcodeAndOperands(const string& line, string& opcode, string& o
 static void Mov(CPU* cpu, const string& operands) {
     string dstText, srcText;
     if (!splitOperands(operands, dstText, srcText)) {
-        cerr << "Error: MOV requires two operands" << endl;
+        cout << "Error: MOV requires two operands" << endl;
         exit(1);
     }
 
     int dstIndex;
     if (!parseRegisterIndex(dstText, dstIndex)) {
-        cerr << "Error: invalid destination register in MOV: " << dstText << endl;
+        cout << "Error: invalid destination register in MOV: " << dstText << endl;
         exit(1);
     }
 
@@ -790,7 +790,7 @@ static void Mov(CPU* cpu, const string& operands) {
     } else if (parseImmediate(srcText, srcValue)) {
         cpu->setReg(dstIndex, srcValue);
     } else {
-        cerr << "Error: invalid source operand in MOV: " << srcText << endl;
+        cout << "Error: invalid source operand in MOV: " << srcText << endl;
         exit(1);
     }
 }
@@ -799,13 +799,13 @@ static void Mov(CPU* cpu, const string& operands) {
 static void execInput(CPU* cpu, const string& operands) {
     int regIndex;
     if (!parseRegisterIndex(operands, regIndex)) {
-        cerr << "Error: INPUT requires a register operand" << endl;
+        cout << "Error: INPUT requires a register operand" << endl;
         exit(1);
     }
     int value;
     cout << "?";
     if (!(cin >> value)) {
-        cerr << "Error: failed to read input" << endl;
+        cout << "Error: failed to read input" << endl;
         exit(1);
     }
     cpu->setReg(regIndex, value);
@@ -815,7 +815,7 @@ static void execInput(CPU* cpu, const string& operands) {
 static void execDisplay(CPU* cpu, const string& operands) {
     int regIndex;
     if (!parseRegisterIndex(operands, regIndex)) {
-        cerr << "Error: DISPLAY requires a register operand" << endl;
+        cout << "Error: DISPLAY requires a register operand" << endl;
         exit(1);
     }
     signed char value = cpu->getRegister(regIndex).getValue();
@@ -828,17 +828,17 @@ static void execDisplay(CPU* cpu, const string& operands) {
 static void execShiftRotate(CPU* cpu, const string& opcode, const string& operands) {
     string regText, countText;
     if (!splitOperands(operands, regText, countText)) {
-        cerr << "Error: " << opcode << " requires a register and count" << endl;
+        cout << "Error: " << opcode << " requires a register and count" << endl;
         exit(1);
     }
     int regIndex;
     if (!parseRegisterIndex(regText, regIndex)) {
-        cerr << "Error: invalid register for " << opcode << ": " << regText << endl;
+        cout << "Error: invalid register for " << opcode << ": " << regText << endl;
         exit(1);
     }
     int count;
     if (!parseImmediate(countText, count)) {
-        cerr << "Error: invalid shift count for " << opcode << ": " << countText << endl;
+        cout << "Error: invalid shift count for " << opcode << ": " << countText << endl;
         exit(1);
     }
 
@@ -887,7 +887,7 @@ public:
     // Retrieve an element by index
     string get(int idx) const {
         if (idx < 0 || idx >= length) {
-            cerr << "[ERROR] DynamicArray index out of range: " << idx << "\n";
+            cout << "[ERROR] DynamicArray index out of range: " << idx << "\n";
             exit(1);
         }
         return items[idx];
@@ -937,7 +937,7 @@ Runner::~Runner() {
 void Runner::loadProgram(const string& filename) {
     ifstream file(filename);          // Opens the assembly source file
     if (!file.is_open()) {
-        cerr << "Error: could not open program file: " << filename << endl;
+        cout << "Error: could not open program file: " << filename << endl;
         exit(1);
     }
 
@@ -1065,7 +1065,7 @@ int main() {
         outFile.close();
         cout << "\n[SUCCESS] Final state successfully saved to " << outFilename << "\n";
     } else {
-        // Using cout here instead of cerr to be strictly safe
+        // Using cout here instead of cout to be strictly safe
         cout << "\n[ERROR] Could not create output file: " << outFilename << "\n";
     }
 
