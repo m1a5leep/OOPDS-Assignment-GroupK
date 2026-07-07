@@ -854,15 +854,17 @@ static void execShiftRotate(CPU* cpu, const string& opcode, const string& operan
     cpu->setReg(regIndex, (int)(signed char)result);
 }
 
-// DynamicArray is the required vector/list data structure used to
-// load the .asm file into memory before execution.
+// ==========================================
+// Member 4
+// DynamicArray class - used to load the .asm file into memory before execution
+// ==========================================
 class DynamicArray {
 private:
-    string* items;
-    int capacity;
-    int length;
+    string* items;        // Encapsulation: internal array is hidden from other classes
+    int capacity;         // Encapsulation: current storage capacity
+    int length;           // Encapsulation: current number of elements stored
 
-    void grow() {
+    void grow() {         // double the capacity when full
         int newCap = capacity == 0 ? 8 : capacity * 2;
         string* newItems = new string[newCap];
         for (int i = 0; i < length; ++i) newItems[i] = items[i];
@@ -897,12 +899,15 @@ public:
     int size() const { return length; }
 };
 
-// Runner - loads the .asm program, decodes each instruction line
+// ==========================================
+// Member 4
+// Runner class - loads the .asm program, decodes each instruction line
 // and delegates execution to the CPU.
+// ==========================================
 class Runner {
 private:
-    CPU* cpu;               // associated CPU instance
-    DynamicArray* program;  // instruction storage (one line per element)
+    CPU* cpu;               // Aggregation: Runner uses an existing CPU object
+    DynamicArray* program;  // Composition: Runner owns the DynamicArray for storing program lines
 
 public:
     Runner(CPU* c);
@@ -920,26 +925,26 @@ public:
 };
 
 Runner::Runner(CPU* c) {
-    cpu = c;
-    program = new DynamicArray();
+    cpu = c;                            // Aggregation: stores reference to existing CPU
+    program = new DynamicArray();       // Composition: Runner owns the DynamicArray
 }
 
 Runner::~Runner() {
-    delete program;
+    delete program;                     // Composition: clean up owned DynamicArray
 }
 
 // reads the .asm file line by line, skipping blank lines
 void Runner::loadProgram(const string& filename) {
-    ifstream file(filename);
+    ifstream file(filename);            // open the assembly file for reading
     if (!file.is_open()) {
         cout << "Error: could not open program file: " << filename << endl;
         exit(1);
     }
 
     string line;
-    while (getline(file, line)) {
+    while (getline(file, line)) {     // read each line from the file
         if (trim(line) != "") {
-            program->add(line);
+            program->add(line);       // store non-empty lines in the DynamicArray
         }
     }
 
@@ -948,9 +953,9 @@ void Runner::loadProgram(const string& filename) {
 
 // executes every loaded instruction in order, then dumps machine state
 void Runner::run() {
-    for (int i = 0; i < program->size(); i++) {
-        string line = program->get(i);
-        executeInstruction(line);
+    for (int i = 0; i < program->size(); i++) {   
+        string line = program->get(i);             // fetch the instruction line
+        executeInstruction(line);                  // decode and execute the instruction
     }
 }
 
@@ -960,7 +965,7 @@ void Runner::run() {
 // instead of silently doing nothing.
 void Runner::executeInstruction(const string& line) {
     string opcode, operands;
-    if (!parseOpcodeAndOperands(line, opcode, operands)) return;
+    if (!parseOpcodeAndOperands(line, opcode, operands)) return;            // parse the line into opcode and operands, skip if empty
 
     if (opcode == "MOV") {
         Mov(cpu, operands);
